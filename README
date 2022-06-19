@@ -2,17 +2,21 @@ cpuburn lets you use 100% of all available cores, useful when stress-testing.
 
 == Installation
 
-Download cpuburn from http://patrickmylund.com/projects/cpuburn/
+```bash
+go get github.com/ilyakaznacheev/cpuburn-web
+```
 
-If you have Go installed, you can run: go get github.com/pmylund/cpuburn
-(a cpuburn binary will be added to your GOPATH/bin folder)
-
-Note: You do not need to have Go installed to run the stand-alone version.
+Or download a build for Linux from release.
 
 == Usage
 
-  ./cpuburn (burn all available cores)
-  ./cpuburn -n 2 (burn two cores)
-  ./cpuburn -n 4 -u 5 (burn four cores, updating every five seconds)
+```bash
+# turn on with all the cores
+curl http://127.0.0.1:8080/on
+# turn on with 2 cores
+curl http://127.0.0.1:8080/on?n=2
+# turn off
+curl http://127.0.0.1:8080/off
+```
 
 See http://patrickmylund.com/projects/cpuburn/ for more information.
