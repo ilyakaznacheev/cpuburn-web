@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
+	"log"
+	"net/http"
 	"runtime"
-	"time"
+	"strconv"
+	"sync"
 )
 
 var (
@@ -12,36 +16,69 @@ var (
 	updateInterval int
 )
 
-func cpuBurn() {
+func cpuBurn(ctx context.Context) {
 	for {
-		for i := 0; i < 2147483647; i++ {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			for i := 0; i < 2147483647; i++ {
+			}
 		}
-		runtime.Gosched()
 	}
 }
 
-func init() {
-	flag.IntVar(&numBurn, "n", 0, "number of cores to burn (0 = all)")
-	flag.IntVar(&updateInterval, "u", 10, "seconds between updates (0 = don't update)")
-	flag.Parse()
-	if numBurn <= 0 {
-		numBurn = runtime.NumCPU()
+var (
+	runningMx sync.Mutex
+	running   bool
+	cancel    func()
+)
+
+func on(w http.ResponseWriter, r *http.Request) {
+
+	runningMx.Lock()
+	defer runningMx.Unlock()
+	if running {
+		fmt.Fprint(w, "already running, call /off first")
+		return
 	}
+	running = true
+
+	nRaw := r.URL.Query().Get("n")
+	n, _ := strconv.Atoi(nRaw)
+	if n <= 0 {
+		n = runtime.NumCPU()
+	}
+	runtime.GOMAXPROCS(n)
+	var ctx context.Context
+	ctx, cancel = context.WithCancel(context.Background())
+
+	for i := 0; i < n; i++ {
+		go cpuBurn(ctx)
+	}
+	log.Printf("started with %d CPU\n", n)
+
+	fmt.Fprintf(w, "started with %d cores usage", n)
+}
+
+func off(w http.ResponseWriter, r *http.Request) {
+	runningMx.Lock()
+	defer runningMx.Unlock()
+
+	if cancel != nil {
+		cancel()
+	}
+
+	running = false
+	fmt.Fprint(w, "finished")
+	log.Println("finished")
 }
 
 func main() {
-	runtime.GOMAXPROCS(numBurn)
-	fmt.Printf("Burning %d CPUs/cores\n", numBurn)
-	for i := 0; i < numBurn; i++ {
-		go cpuBurn()
-	}
-	if updateInterval > 0 {
-		t := time.Tick(time.Duration(updateInterval) * time.Second)
-		for secs := updateInterval; ; secs += updateInterval {
-			<-t
-			fmt.Printf("%d seconds\n", secs)
-		}
-	} else {
-		select {} // wait forever
-	}
+	port := flag.String("p", "8080", "port")
+	flag.Parse()
+
+	http.HandleFunc("/on", on)
+	http.HandleFunc("/off", off)
+	http.ListenAndServe(":"+*port, nil)
 }
