@@ -1,6 +1,6 @@
-cpuburn lets you use 100% of all available cores, useful when stress-testing.
+cpuburn lets you use 100% of all available cores, useful when http-based stress-testing.
 
-== Installation
+## Installation
 
 ```bash
 go get github.com/ilyakaznacheev/cpuburn-web
@@ -8,7 +8,7 @@ go get github.com/ilyakaznacheev/cpuburn-web
 
 Or download a build for Linux from release.
 
-== Usage
+## Usage
 
 ```bash
 # turn on with all the cores
@@ -18,5 +18,3 @@ curl http://127.0.0.1:8080/on?n=2
 # turn off
 curl http://127.0.0.1:8080/off
 ```
-
-See http://patrickmylund.com/projects/cpuburn/ for more information.
